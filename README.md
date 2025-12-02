@@ -1,4 +1,5 @@
 ------------------My report - Isaac Coddington--------------------
+
 Me and my wife had a baby halfway through the semester project, so I couldn’t help much during the planning and set up process. During the week of Thanksgiving while we had family here to help, I was able to sit down and create the project.
 
 I started by creating the GUI window and all the UI elements in QT Widgets. After that I started the process of creating all the slots then connecting all the UI signals to those slots. Once I had all Ui elements connected to the desired slots I started working on the code within the slot function. 
@@ -15,9 +16,15 @@ The character stat screen window also gave me some trouble. I was trying to disp
 I did a little work on the third day, which was more manual testing to try to catch any small bugs I might have missed on the first two days. Most of my testing was during the first two days as I built things. I also went through and cleaned up my code and comments, then finally I created this report of my work.
 
 ----------------Running the program----------------------
-Using the program is pretty easy just run the program and a window will pop up
-You can enter your name in the text box below the name label
-You select which race you want to play and it will display a picture as well as give you 10 free stat points in certain stats depending on which class you select
-You select which class you want and it will display the class trait for that class below the buttons
-You can use the arrow or type in the box to distribute your 15 stat points in whatever stat combo you want. You can't go over 15 and it will update to show how many points you have left.
-Once you are done you can click create and it will display an second screen with all your selections as a character stat sheet.
+
+* Using the program is pretty easy just run the program and a window will pop up
+  
+*You can enter your name in the text box below the name label
+
+*You select which race you want to play and it will display a picture as well as give you 10 free stat points in certain stats depending on which class you select
+
+*You select which class you want and it will display the class trait for that class below the buttons
+
+*You can use the arrow or type in the box to distribute your 15 stat points in whatever stat combo you want. You can't go over 15 and it will update to show how many points you have left.
+
+*Once you are done you can click create and it will display an second screen with all your selections as a character stat sheet.
