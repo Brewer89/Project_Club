@@ -5,6 +5,10 @@
 #include <QGraphicsScene>
 #include <QGraphicsPixmapItem>
 #include <QDebug>
+#include <QCheckBox>
+#include <QMessageBox>
+#include <algorithm>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -25,6 +29,7 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
+
 /*
 * This is called when any of the button for race selection is pushed
 * it displays a picture in the GraphicsView and also adds some stat point into different stats
@@ -94,7 +99,10 @@ void MainWindow::raceSelect(string inRace){
         stamina = 0;
         ui->staminaBox->setValue(stamina);
     }
+
+    updatePreviewStats();
 }
+
 /*
 * This function gave me a lot of trouble, setting values within the function was causing recursive
 * function calls but I couldn't think of a way stop users from allocating stat points beyond the
@@ -150,7 +158,10 @@ void MainWindow::sliderChanged(){
     QFont font("Ariel", 16);
     ui->statsLeft->setNum(stats);
     ui->statsLeft->setFont(font);
+
+    updatePreviewStats();
 }
+
 //any class button pushes call this function which update the charClass variable and display a trait on the ui
 void MainWindow::classSelect(string inClass){
     if(inClass == "wizard"){
@@ -166,6 +177,7 @@ void MainWindow::classSelect(string inClass){
         ui->classTrait->setText("Innate access to invisibilty");
     }
 }
+
 //assignes input to name variable and displays it on the window
 void MainWindow::nameInput(){
     QFont font("Ariel", 18);
@@ -173,23 +185,73 @@ void MainWindow::nameInput(){
     ui->nameLabel->setText(ui->nameInput->text());
     ui->nameLabel->setFont(font);
 }
+
 //this is called when the user clicks create and assigns all character variables to the character object
+//if the user has remaing trait/stat points this will prompt the user to go back and use them or coninue
 //then this displays the charsheet window
-void MainWindow::createChar(){
-    //sets all variables within the userChar object
-    userChar.setArmor(armor);
-    userChar.setHealth(health);
-    userChar.setStamina(stamina);
-    userChar.setMagic(magic);
-    userChar.setStrength(strength);
+void MainWindow::createChar()
+{
+    // Make sure preview stats are current (in case user changed something last second)
+    updatePreviewStats();
+
+    // Check for unused stat points and traits
+    int unusedStats  = stats; // remaining points from your checkStats logic
+    int maxTraits    = 2; // change if you allow more later
+    int usedTraits   = static_cast<int>(selectedTraitIds.size());
+    int unusedTraits = maxTraits - usedTraits;
+
+    bool hasUnusedStats  = (unusedStats > 0);
+    bool hasUnusedTraits = (unusedTraits > 0);
+
+    if (hasUnusedStats || hasUnusedTraits) {
+        QString warningText = "You still have:\n";
+
+        if (hasUnusedStats) {
+            warningText += QString(" • %1 unspent stat point%2\n")
+                               .arg(unusedStats)
+                               .arg(unusedStats == 1 ? "" : "s");
+        }
+
+        if (hasUnusedTraits) {
+            warningText += QString(" • %1 unused trait slot%2\n")
+                               .arg(unusedTraits)
+                               .arg(unusedTraits == 1 ? "" : "s");
+        }
+
+        warningText += "\nDo you want to go back and spend these before creating your character?";
+
+        QMessageBox::StandardButton reply = QMessageBox::question(
+            this,
+            "Unused Points",
+            warningText,
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::Yes
+            );
+
+        // Yes -> go back to the creator (do NOT create the character)
+        // No -> continue and create anyway
+        if (reply == QMessageBox::Yes) {
+            return;
+        }
+    }
+
+    // Actually create the character
+    // Use the preview stats (base + traits)
+    userChar.setArmor(previewArmor);
+    userChar.setHealth(previewHealth);
+    userChar.setStamina(previewStamina);
+    userChar.setMagic(previewMagic);
+    userChar.setStrength(previewStrength);
     userChar.setCharClass(charClass);
     userChar.setRace(race);
     userChar.setName(name);
-    //creates the new window that displays the final charsheet
+
+    // Show sheet and close creator
     charSheet *newWindow = new charSheet(userChar, nullptr);
     newWindow->show();
     close();
 }
+
 //this function is called on window creation to initialize anything needed to be done first
 void MainWindow::init(){
     ui->healthBox->setRange(0, 30);
@@ -198,7 +260,136 @@ void MainWindow::init(){
     ui->magicBox->setRange(0, 30);
     ui->strengthBox->setRange(0, 30);
 
+    initTraits();
+
+    connect(ui->toughCheckBox,   &QCheckBox::toggled, this, &MainWindow::traitToggled);
+    connect(ui->agileCheckBox,   &QCheckBox::toggled, this, &MainWindow::traitToggled);
+    connect(ui->mysticCheckBox,  &QCheckBox::toggled, this, &MainWindow::traitToggled);
+    connect(ui->bulwarkCheckBox, &QCheckBox::toggled, this, &MainWindow::traitToggled);
+
+    updatePreviewStats();
+
 }
+
+void MainWindow::traitToggled()
+{
+    QCheckBox *check = qobject_cast<QCheckBox*>(sender());
+    if (!check) return;
+
+    string id;
+
+    if (check == ui->toughCheckBox)      id = "tough";
+    else if (check == ui->agileCheckBox) id = "agile";
+    else if (check == ui->mysticCheckBox) id = "mystic";
+    else if (check == ui->bulwarkCheckBox) id = "bulwark";
+    else return;
+
+    if (check->isChecked()) {
+        // user is trying to select this trait
+        if (selectedTraitIds.size() >= 2) {
+            // too many – roll back the check
+            check->blockSignals(true);
+            check->setChecked(false);
+            check->blockSignals(false);
+
+            QMessageBox::information(this, "Trait Limit",
+                                     "You can only choose up to 2 traits.");
+            return;
+        }
+
+        // add it
+        selectedTraitIds.push_back(id);
+    } else {
+        // user unchecked - remove it
+        auto it = std::find(selectedTraitIds.begin(), selectedTraitIds.end(), id);
+        if (it != selectedTraitIds.end()) {
+            selectedTraitIds.erase(it);
+        }
+    }
+
+    updatePreviewStats();
+}
+
+
+//Initialize traits
+void MainWindow::initTraits()
+{
+    availableTraits.clear();
+
+    availableTraits.push_back({
+        "tough", "Tough", "Resilient and hardy (+3 Health)",
+        0, 3, 0, 0, 0
+    });
+
+    availableTraits.push_back({
+        "agile", "Agile", "Quick on their feet (+3 Stamina)",
+        0, 0, 3, 0, 0
+    });
+
+    availableTraits.push_back({
+        "mystic", "Mystic", "Attuned to the arcane (+3 Magic, -1 Strength)",
+        0, 0, 0, 3, -1
+    });
+
+    availableTraits.push_back({
+        "bulwark", "Bulwark", "Heavily protected (+3 Armor)",
+        3, 0, 0, 0, 0
+    });
+
+    // Optional: set tooltips on checkboxes
+    ui->toughCheckBox->setToolTip("Resilient and hardy (+3 Health)");
+    ui->agileCheckBox->setToolTip("Quick on their feet (+3 Stamina)");
+    ui->mysticCheckBox->setToolTip("Attuned to the arcane (+3 Magic, -1 Strength)");
+    ui->bulwarkCheckBox->setToolTip("Heavily protected (+3 Armor)");
+}
+
+//Helper function to find a specific trait
+const MainWindow::Trait* MainWindow::findTraitById(const string &id) const
+{
+    for (const auto &t : availableTraits) {
+        if (t.id == id) return &t;
+    }
+    return nullptr;
+}
+
+
+void MainWindow::updatePreviewStats()
+{
+    // Start from what’s currently in the spin boxes
+    previewArmor    = ui->armorBox->value();
+    previewHealth   = ui->healthBox->value();
+    previewStamina  = ui->staminaBox->value();
+    previewMagic    = ui->magicBox->value();
+    previewStrength = ui->strengthBox->value();
+
+    // Add trait modifiers on top
+    for (const auto &id : selectedTraitIds) {
+        const Trait* t = findTraitById(id);
+        if (!t) continue;
+
+        previewArmor    += t->armorMod;
+        previewHealth   += t->healthMod;
+        previewStamina  += t->staminaMod;
+        previewMagic    += t->magicMod;
+        previewStrength += t->strengthMod;
+    }
+
+    // Safety: no negatives
+    previewArmor    = std::max(0, previewArmor);
+    previewHealth   = std::max(0, previewHealth);
+    previewStamina  = std::max(0, previewStamina);
+    previewMagic    = std::max(0, previewMagic);
+    previewStrength = std::max(0, previewStrength);
+
+    // Update labels so user can see the final numbers
+    ui->armorTotalLabel->setText(QString::number(previewArmor));
+    ui->healthTotalLabel->setText(QString::number(previewHealth));
+    ui->staminaTotalLabel->setText(QString::number(previewStamina));
+    ui->magicTotalLabel->setText(QString::number(previewMagic));
+    ui->strengthTotalLabel->setText(QString::number(previewStrength));
+}
+
+
 //compares inStats to MAXSTATS to see if the current assigned amount goes over maximum allowed
 bool MainWindow::checkStats(int inStats){
     const int MAXSTATS = 15;

@@ -1,6 +1,7 @@
 #ifndef CHARACTER_H
 #define CHARACTER_H
 #include <string>
+#include <vector>
 using namespace std;
 
 class character{
@@ -13,6 +14,9 @@ private:
     int stamina;
     int magic;
     int strength;
+
+    vector<string> traits;
+
 public:
     character();
     void setName(string inName) {this->name = inName;}
@@ -31,6 +35,9 @@ public:
     int getStamina() const { return stamina; }
     int getMagic() const { return magic; }
     int getStrength() const { return strength; }
+
+    void setTraits(const vector<string>& inTraits) { traits = inTraits; }
+    const vector<string>& getTraits() const { return traits; }
 
 };
 
