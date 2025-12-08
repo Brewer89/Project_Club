@@ -25,6 +25,8 @@ private slots:
     void nameInput();
     void createChar();
 
+    void traitToggled();
+
 private:
     Ui::MainWindow *ui;
     void init();
@@ -39,5 +41,35 @@ private:
     int stats = 15;
     character userChar;
     bool checkStats(int inStats);
+
+    // New trait data
+    struct Trait {
+        string id;
+        string displayName;
+        string description;
+        int armorMod = 0;
+        int healthMod = 0;
+        int staminaMod = 0;
+        int magicMod = 0;
+        int strengthMod = 0;
+    };
+
+    // list of all possible traits
+    vector<Trait> availableTraits;
+
+    // currently chosen (max 2)
+    vector<string> selectedTraitIds;
+
+    void initTraits();
+    const Trait* findTraitById(const string &id) const;
+    void enforceTraitLimit(QObject *senderCheckBox);
+
+    int previewArmor    = 0;
+    int previewHealth   = 0;
+    int previewStamina  = 0;
+    int previewMagic    = 0;
+    int previewStrength = 0;
+    void updatePreviewStats();
+
 };
 #endif // MAINWINDOW_H

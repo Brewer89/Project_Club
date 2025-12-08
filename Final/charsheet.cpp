@@ -5,6 +5,7 @@
 #include <QGraphicsPixmapItem>
 #include <QGraphicsView>
 #include <string>
+
 charSheet::charSheet(const character &userChar, QWidget *parent)
     : QDialog(parent),
     ui(new Ui::charSheet)
@@ -18,6 +19,7 @@ charSheet::~charSheet()
 {
     delete ui;
 }
+
 /*
 * I got the (QString::fromStdString( from stack overflow as I was having trouble
 * when trying to concat the stat labals text using the to_string conversion.
@@ -47,8 +49,24 @@ void charSheet::init(){
         ui->classLabel->setText(QString::fromStdString("Rogue"));
         ui->classTrait->setText("Innate access to invisibilty");
     }
+
+    // NEW: show traits
+    const auto &traits = userChar.getTraits();
+    if (!traits.empty()) {
+        ui->trait1Label->setText(QString::fromStdString(traits[0]));
+    } else {
+        ui->trait1Label->setText("None");
+    }
+
+    if (traits.size() > 1) {
+        ui->trait2Label->setText(QString::fromStdString(traits[1]));
+    } else {
+        ui->trait2Label->clear();
+    }
+
     display();
 }
+
 /*
 * This displays the character race picture on the new window
 * I ran into a bug with this where the picture was displaying tiny within the graphics view, turns out calling
@@ -81,6 +99,7 @@ void charSheet::display(){
         scene->addPixmap(orcPic);
     }
 }
+
 void charSheet::showEvent(QShowEvent *event){
     QDialog::showEvent(event);
 
