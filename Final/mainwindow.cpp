@@ -187,7 +187,7 @@ void MainWindow::nameInput(){
 }
 
 //this is called when the user clicks create and assigns all character variables to the character object
-//if the user has remaing trait/stat points this will prompt the user to go back and use them or coninue
+//if the user has remaing trait/stat points this will prompt the user to go back and use them or continue
 //then this displays the charsheet window
 void MainWindow::createChar()
 {
@@ -235,7 +235,7 @@ void MainWindow::createChar()
         }
     }
 
-    // Actually create the character
+    // Create the character
     // Use the preview stats (base + traits)
     userChar.setArmor(previewArmor);
     userChar.setHealth(previewHealth);
@@ -245,6 +245,10 @@ void MainWindow::createChar()
     userChar.setCharClass(charClass);
     userChar.setRace(race);
     userChar.setName(name);
+
+    std::vector<std::string> traitNames;
+    traitNames.assign(selectedTraitIds.begin(), selectedTraitIds.end());
+    userChar.setTraits(traitNames);
 
     // Show sheet and close creator
     charSheet *newWindow = new charSheet(userChar, nullptr);
